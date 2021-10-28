@@ -1,0 +1,109 @@
+apiVersion: 1.0.0
+metadata:
+  name: api
+projects:
+  - name: api
+    source:
+      location: 'https://github.com/redhat-appdev-practice/vertx-openapi-jooq-multimodule.git'
+      type: git
+components:
+  - type: chePlugin
+    id: vscode/typescript-language-features/latest
+  - type: chePlugin
+    id: ms-vscode/node-debug2/latest
+  - type: dockerimage
+    alias: nodejs
+    image: 'registry.redhat.io/codeready-workspaces/plugin-java8-rhel8@sha256:1c4faa2dae80c373f606f542ca841f991d1dfa27979006500aca85e3c2999d2d'
+    memoryLimit: 512Mi
+    endpoints:
+      - name: nodejs
+        port: 3000
+    mountSources: true
+  - id: sonarsource/sonarlint-vscode/latest
+    type: chePlugin
+    preferences:
+      sonarlint.connectedMode.connections.sonarcloud: >
+        [{
+          "connectionId": "sonarcloud",
+          "organizationKey": "infosec812-github",
+          "token": "07c55d49dcae384ad64611a7529102b656d4118c"
+        }]
+      sonarlint.connectedMode.project: >
+        {
+          "projectKey": "vertx-openapi-jooq-multimodule",
+          "connectionId": "sonarcloud"
+        }
+  - id: ms-kubernetes-tools/vscode-kubernetes-tools/latest
+    type: chePlugin
+  - id: redhat/vscode-openshift-connector/latest
+    type: chePlugin
+  - id: redhat/vscode-xml/latest
+    type: chePlugin
+  - id: redhat/vscode-yaml/latest
+    type: chePlugin
+  - id: redhat/dependency-analytics/latest
+    type: chePlugin
+  - mountSources: true
+    command:
+      - sleep
+      - infinity
+    memoryLimit: 256Mi
+    type: dockerimage
+    alias: openapi
+    image: 'docker.io/openapitools/openapi-generator-cli:latest'
+  - mountSources: true
+    command:
+      - sleep
+      - infinity
+    memoryLimit: 128Mi
+    type: dockerimage
+    alias: 3scale
+    image: 'registry.redhat.io/3scale-amp2/toolbox-rhel7:1.5.0'
+commands:
+  - name: 1. Run the web app (and download dependencies)
+    actions:
+      - type: exec
+        component: nodejs
+        command: npm install; nodemon app.js
+        workdir: '${CHE_PROJECTS_ROOT}/nodejs-web-app/app'
+  - name: 2. Download dependencies
+    actions:
+      - type: exec
+        component: nodejs
+        command: npm install
+        workdir: '${CHE_PROJECTS_ROOT}/nodejs-web-app/app'
+  - name: 3. Run the web app
+    actions:
+      - type: exec
+        component: nodejs
+        command: nodemon app.js
+        workdir: '${CHE_PROJECTS_ROOT}/nodejs-web-app/app'
+  - name: 4. Run the web app (debugging enabled)
+    actions:
+      - type: exec
+        component: nodejs
+        command: nodemon --inspect app.js
+        workdir: '${CHE_PROJECTS_ROOT}/nodejs-web-app/app'
+  - name: 5. Stop the web app
+    actions:
+      - type: exec
+        component: nodejs
+        command: 'node_server_pids=$(pgrep -fx ''.*nodemon (--inspect )?app.js'' | tr "\\n" " ") && echo "Stopping node server with PIDs: ${node_server_pids}" && kill -15 ${node_server_pids} &>/dev/null && echo ''Done.'''
+  - name: Attach remote debugger
+    actions:
+      - type: vscode-launch
+        referenceContent: |
+          {
+            "version": "0.2.0",
+            "configurations": [
+              {
+                "type": "node",
+                "request": "attach",
+                "name": "Attach to Remote",
+                "address": "localhost",
+                "port": 9229,
+                "localRoot": "${workspaceFolder}",
+                "remoteRoot": "${workspaceFolder}"
+              }
+            ]
+          }
