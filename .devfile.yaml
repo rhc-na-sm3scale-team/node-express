@@ -4,7 +4,7 @@ metadata:
 projects:
   - name: api
     source:
-      location: 'https://github.com/redhat-appdev-practice/vertx-openapi-jooq-multimodule.git'
+      location: 'https://github.com/rhc-na-sm3scale-team/node-express.git'
       type: git
 components:
   - type: chePlugin
