@@ -17,7 +17,7 @@ components:
     memoryLimit: 512Mi
     endpoints:
       - name: nodejs
-        port: 3000
+        port: 4180
     mountSources: true
   - id: sonarsource/sonarlint-vscode/latest
     type: chePlugin
